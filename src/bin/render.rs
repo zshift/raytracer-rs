@@ -7,7 +7,7 @@ fn main() {
     let app = App::new("raytracer")
         .version("0.1.0")
         .author("Peter Faria <zshift@gmail.com>")
-        .about("Basic Ratracer (source: https://bheisler.github.io/post/writing-raytracer-in-rust-part-1/")
+        .about("Simple raytracer implementation (source: https://www.github.com/zshift/raytracer-rs")
         .arg(Arg::with_name("scene")
             .help("Sets the scene file to use")
             .required(true)

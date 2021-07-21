@@ -1,5 +1,5 @@
 # raytracer-rs
-Raytracer implementation in rust.
+Raytracer implementation in [rust](https://www.rust-lang.org).
 
 This was heavily inspired by https://github.com/bheisler/raytracer 
 (I followed his blog posts on creating the raytracer, starting with https://bheisler.github.io/post/writing-raytracer-in-rust-part-1/).
