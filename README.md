@@ -10,3 +10,7 @@ I've since added parallelism with [rayon](https://crates.io/crates/rayon), and I
 Debug builds can be run with `cargo run --bin render <scene.json> <image.png>`. 
 
 Release mode is built with `cargo build --release`, and the executable will be `target/release/render`. The library will  be `target/release/libraytracer.rlib`.
+
+# Sample Output
+
+![raytraced-4k-render](./samples/4k.png)
