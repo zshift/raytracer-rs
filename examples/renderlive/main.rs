@@ -43,13 +43,14 @@ fn run(scene: Scene) {
     let bytes_per_pixel = color_type.bytes_per_pixel();
 
     let num_bytes = width as usize * height as usize * bytes_per_pixel as usize;
-    let mut buf = vec![0; num_bytes];
-    let mut buf = &mut buf[..];
-
-    raytracer::render(scene, &mut buf, bytes_per_pixel);
-
     let mut img = vec![0u8; num_bytes];
-    encode_to_png(buf, &mut img[..], width, height, color_type);
+    if cfg!(not(debug_assertions)) {
+        let mut buf = vec![0; num_bytes];
+        let mut buf = &mut buf[..];
+
+        raytracer::render(scene, &mut buf, bytes_per_pixel);
+        encode_to_png(buf, &mut img[..], width, height, color_type);
+    }
 
     match display_image(&img[..]) {
         Ok(_) => {}
@@ -81,8 +82,6 @@ fn display_image(img: &[u8]) -> Result<(), String> {
         .build()
         .expect("Creating window");
 
-    let (x, y) = window.position();
-
     let mut canvas = window
         .into_canvas()
         .accelerated()
@@ -91,10 +90,23 @@ fn display_image(img: &[u8]) -> Result<(), String> {
 
     let mut event_pump = sdl_context.event_pump()?;
     let mouse_state = sdl2::mouse::MouseState::new(&event_pump);
-    let mut drawer = Renderer::new(x, y, width, height, mouse_state.x(), mouse_state.y());
 
     let texture_creator = canvas.texture_creator();
+    #[cfg(not(debug_assertions))]
     let texture = texture_creator.load_texture_bytes(img)?;
+    #[cfg(debug_assertions)]
+    let texture = texture_creator.load_texture("./samples/4k.png")?;
+
+    let props = texture.query();
+    let mut drawer = Renderer::new(
+        0,
+        0,
+        props.width,
+        props.height,
+        mouse_state.x(),
+        mouse_state.y(),
+    );
+    drawer.draw(&mut canvas, &texture)?;
 
     'miniloop: loop {
         for event in event_pump.poll_iter() {
@@ -106,31 +118,43 @@ fn display_image(img: &[u8]) -> Result<(), String> {
                 } => break 'miniloop,
                 Event::MouseMotion { x, y, .. } => {
                     drawer.set_mouse(x, y);
+                    if drawer.is_panning() {
+                        drawer.draw(&mut canvas, &texture)?;
+                    }
                 }
                 Event::MouseWheel { direction, y, .. } => {
-                    let y = y as f32
-                        * match direction {
-                            MouseWheelDirection::Normal => 1.,
-                            MouseWheelDirection::Flipped => -1.,
-                            _ => 1.,
-                        };
-                    drawer.zoom(y);
+                    let y = if y > 0 { 1 } else { -1 };
+                    let y = y * match direction {
+                        MouseWheelDirection::Normal => 1,
+                        MouseWheelDirection::Flipped => -1,
+                        _ => 1,
+                    };
+                    drawer.zoom(y as f32);
                     drawer.draw(&mut canvas, &texture)?;
                 }
 
-                Event::Window {
-                    win_event: WindowEvent::Moved(x, y),
+                Event::MouseButtonDown {
+                    mouse_btn: sdl2::mouse::MouseButton::Middle,
                     ..
                 } => {
-                    drawer.set_position(x, y);
-                    drawer.draw(&mut canvas, &texture)?;
+                    drawer.start_panning();
+                }
+
+                Event::MouseButtonUp {
+                    mouse_btn: sdl2::mouse::MouseButton::Middle,
+                    ..
+                } => {
+                    drawer.stop_panning();
                 }
 
                 Event::Window {
-                    win_event: WindowEvent::Resized(width, height),
+                    win_event: WindowEvent::Resized(..),
+                    ..
+                }
+                | Event::Window {
+                    win_event: WindowEvent::Moved(..),
                     ..
                 } => {
-                    drawer.set_area(width as u32, height as u32);
                     drawer.draw(&mut canvas, &texture)?;
                 }
                 _ => {}
