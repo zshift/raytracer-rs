@@ -14,7 +14,8 @@ serde_derive = "1.0.126"
 [dev-dependencies]
 clap = { version = "2.33.3" }
 serde_json = { version = "1.0.64" }
-sdl2 = { version = "0.34.5", features = ["image"] }
+sdl2 = { version = "0.34.5", features = ["image", "ttf"] }
+tokio = { version = "1.10.0", features = ["full"] }
 
 [[example]]
 name = "render"

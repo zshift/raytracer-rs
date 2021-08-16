@@ -5,6 +5,13 @@ use sdl2::rect::Rect;
 use sdl2::render::{Canvas, Texture};
 use sdl2::video::Window;
 
+// handle the annoying Rect i32
+macro_rules! rect(
+    ($x:expr, $y:expr, $w:expr, $h:expr) => (
+        Rect::new($x as i32, $y as i32, $w as u32, $h as u32)
+    )
+);
+
 const ZOOM_INTENSITY: f32 = 0.1;
 
 #[derive(Debug)]
@@ -62,7 +69,7 @@ impl Renderer {
         canvas.copy(
             texture,
             Some(self.scaled_rect()),
-            Some(self.aspected_rect(width, height)),
+            Some(self.aspected_rect(width as f32, height as f32)),
         )?;
         canvas.present();
 
@@ -70,16 +77,16 @@ impl Renderer {
     }
 
     fn scaled_rect(&self) -> Rect {
-        let x = (self.x as f32 * self.scale) as i32;
-        let y = (self.y as f32 * self.scale) as i32;
-        let width = (self.width as f32 * self.scale) as u32;
-        let height = (self.height as f32 * self.scale) as u32;
+        let x = self.x as f32 * self.scale;
+        let y = self.y as f32 * self.scale;
+        let width = self.width as f32 * self.scale;
+        let height = self.height as f32 * self.scale;
 
-        Rect::new(x, y, width, height)
+        rect!(x, y, width, height)
     }
 
-    fn aspected_rect(&self, width: u32, height: u32) -> Rect {
-        let target_aspect = width as f32 / height as f32;
+    fn aspected_rect(&self, width: f32, height: f32) -> Rect {
+        let target_aspect = width / height;
         let img_aspect = self.width as f32 / self.height as f32;
 
         let x;
@@ -89,21 +96,21 @@ impl Renderer {
 
         if img_aspect > target_aspect {
             new_width = width;
-            new_height = (new_width as f32 / img_aspect) as u32;
-            x = 0;
-            y = ((new_height as f32 - height as f32).abs() / 2.) as i32;
+            new_height = new_width / img_aspect;
+            x = 0.;
+            y = (new_height - height).abs() / 2.;
         } else {
             new_height = height;
-            new_width = (img_aspect * new_height as f32) as u32;
-            x = ((new_width as f32 - width as f32).abs() / 2.) as i32;
-            y = 0;
+            new_width = img_aspect * new_height;
+            x = (new_width - width).abs() / 2.;
+            y = 0.;
         }
 
-        Rect::new(
-            x.max(0),
-            y.max(0),
+        rect!(
+            x.max(0.),
+            y.max(0.),
             new_width.min(width),
-            new_height.min(height),
+            new_height.min(height)
         )
     }
 }
